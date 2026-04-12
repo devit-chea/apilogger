@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 use GDI\ApiLogger\Contracts\ApiLoggerInterface;
 
-class ApiLoggerMiddleware
+class ApiLoggersMiddleware
 {
     public function __construct(protected ApiLoggerInterface $logger) {}
 
