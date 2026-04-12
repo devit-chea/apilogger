@@ -218,7 +218,7 @@ packages/apilogger/
     │   └── Middleware/
     │       └── ApiLoggerMiddleware.php
     ├── Models/
-    │   └── ApiLog.php
+    │   └── ApiLogger.php
     └── Providers/
         └── ApiLoggerServiceProvider.php
 ```

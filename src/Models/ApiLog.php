@@ -4,7 +4,7 @@ namespace GDI\ApiLogger\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ApiLog extends Model
+class ApiLogger extends Model
 {
     public $timestamps = false;
 

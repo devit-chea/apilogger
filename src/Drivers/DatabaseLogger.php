@@ -3,14 +3,14 @@
 namespace GDI\ApiLogger\Drivers;
 
 use Illuminate\Pagination\LengthAwarePaginator;
-use GDI\ApiLogger\Models\ApiLog;
+use GDI\ApiLogger\Models\ApiLogger;
 
 class DatabaseLogger extends AbstractLogger
 {
     /** {@inheritdoc} */
     public function save(array $data): void
     {
-        ApiLog::create([
+        ApiLogger::create([
             'log_id'      => $data['id'],
             'method'      => $data['method'],
             'url'         => $data['url'],
@@ -30,7 +30,7 @@ class DatabaseLogger extends AbstractLogger
     /** {@inheritdoc} */
     public function all(int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        $query = ApiLog::query()->latest('logged_at');
+        $query = ApiLogger::query()->latest('logged_at');
 
         if (!empty($filters['method'])) {
             $query->method($filters['method']);
@@ -48,13 +48,13 @@ class DatabaseLogger extends AbstractLogger
     /** {@inheritdoc} */
     public function find(mixed $id): ?array
     {
-        $log = ApiLog::where('log_id', $id)->first();
+        $log = ApiLogger::where('log_id', $id)->first();
         return $log ? $log->toArray() : null;
     }
 
     /** {@inheritdoc} */
     public function clear(): void
     {
-        ApiLog::truncate();
+        ApiLogger::truncate();
     }
 }
