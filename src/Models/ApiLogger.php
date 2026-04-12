@@ -8,7 +8,7 @@ class ApiLogger extends Model
 {
     public $timestamps = false;
 
-    protected $table = 'api_logs';
+    protected $table = 'api_loggers';
 
     protected $fillable = [
         'log_id',
