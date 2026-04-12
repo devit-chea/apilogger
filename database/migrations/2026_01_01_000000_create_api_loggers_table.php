@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('api_logs', function (Blueprint $table) {
+        Schema::create('api_loggers', function (Blueprint $table) {
             $table->id();
             $table->string('log_id')->unique();
             $table->string('method', 10);
@@ -17,7 +17,10 @@ return new class extends Migration
             $table->unsignedSmallInteger('status_code')->nullable()->index();
             $table->float('duration')->nullable()->comment('milliseconds');
             $table->longText('payload')->nullable();
+            $table->longText('payload_raw')->nullable()->after('payload');
             $table->longText('response')->nullable();
+            $table->longText('response_headers')->nullable()->after('response');
+            $table->text('headers')->nullable()->after('response');
             $table->string('controller')->nullable();
             $table->string('action')->nullable();
             $table->string('models')->nullable();
@@ -31,6 +34,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('api_logs');
+        Schema::dropIfExists('api_loggers');
     }
 };
