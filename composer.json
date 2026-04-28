@@ -1,6 +1,7 @@
 {
     "name": "gdi/apilogger",
     "description": "A Laravel package for logging and debugging API requests.",
+    "version": "2.0.0",
     "type": "library",
     "license": "MIT",
     "authors": [
