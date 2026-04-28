@@ -12,6 +12,9 @@ Supports both **file** and **database** drivers, a built-in dashboard, and is fu
 - Pluggable custom driver interface
 - Dashboard UI at `/apilogger` with filtering, pagination, and detail view
 - Hidden fields (passwords, tokens, etc.) automatically masked
+- **Response filtering** - Remove sensitive keys from logged responses
+- **Route filtering** - Exclude or include specific routes from logging
+- **Performance optimized** - Database driver splits large data into separate table
 - Artisan command to clear logs
 - Zero external JS/CSS dependencies — dashboard is self-contained
 
@@ -70,14 +73,67 @@ php artisan migrate
 
 `config/apilogger.php`:
 
+### Storage Settings
+
 | Key | Default | Description |
 |---|---|---|
 | `driver` | `file` | Storage driver: `file`, `db`, or a custom class name |
 | `log_file` | `logs/apilogger.log` | File path (relative to `storage/`) for the file driver |
 | `max_entries` | `1000` | Max entries kept by file driver (0 = unlimited) |
-| `hidden_fields` | `[password, token, ...]` | Request fields replaced with `***` |
+
+### Queue Settings
+
+| Key | Default | Description |
+|---|---|---|
+| `queue.enabled` | `false` | Enable async logging via queue |
+| `queue.connection` | `default` | Queue connection to use |
+| `queue.queue` | `default` | Queue name to push jobs to |
+
+You can also set these via `.env`:
+
+```env
+APILOGGER_DRIVER=db
+APILOGGER_QUEUE_ENABLED=true
+APILOGGER_QUEUE_CONNECTION=database
+APILOGGER_QUEUE_NAME=logs
+```
+
+### Data Capture Settings
+
+| Key | Default | Description |
+|---|---|---|
 | `log_response` | `true` | Whether to capture response body |
-| `max_response_length` | `5000` | Characters to store per response (0 = unlimited) |
+| `log_request_headers` | `false` | Whether to capture request headers |
+| `log_response_headers` | `false` | Whether to capture response headers |
+
+### Data Truncation Settings
+
+| Key | Default | Description |
+|---|---|---|
+| `max_response_length` | `5000` | Max characters per response (0 = unlimited) |
+| `max_url_length` | `500` | Max characters per URL (0 = unlimited) |
+| `max_payload_length` | `5000` | Max characters per payload (0 = unlimited) |
+
+### Security Settings
+
+| Key | Default | Description |
+|---|---|---|
+| `hidden_fields` | `[password, password_confirmation, secret, token, api_key, credit_card]` | Request fields replaced with `***` |
+| `exclude_payload_keys` | `[]` | Additional payload keys to mask |
+| `exclude_response_keys` | `[]` | Response keys to remove (supports nested: `data.user.password`) |
+| `exclude_response_patterns` | `[]` | Response patterns with wildcards (e.g., `data.*.password`) |
+
+### Route Filtering
+
+| Key | Default | Description |
+|---|---|---|
+| `exclude_routes` | `[]` | Routes to skip logging (string or regex) |
+| `include_routes` | `[]` | Only log these routes (empty = log all) |
+
+### Dashboard Settings
+
+| Key | Default | Description |
+|---|---|---|
 | `route.prefix` | `apilogger` | Dashboard URL prefix |
 | `route.middleware` | `['web']` | Middleware applied to dashboard routes |
 | `per_page` | `20` | Entries per page on the dashboard |
@@ -118,6 +174,110 @@ You can filter by HTTP method, status code, and URL substring.
 ```bash
 php artisan apilogger:clear
 ```
+
+### Using Queues for Async Logging
+
+For high-traffic applications, you can enable async logging to avoid blocking API responses:
+
+```php
+// config/apilogger.php
+'queue' => [
+    'enabled' => true,
+    'connection' => 'database',  // redis, sqs, etc.
+    'queue' => 'logs',
+],
+```
+
+Or via `.env`:
+
+```env
+APILOGGER_QUEUE_ENABLED=true
+APILOGGER_QUEUE_CONNECTION=database
+APILOGGER_QUEUE_NAME=logs
+```
+
+Make sure your queue worker is running:
+
+```bash
+php artisan queue:work --queue=logs
+```
+
+---
+
+## Advanced Configuration
+
+### Filtering Response Data
+
+Remove sensitive keys from logged responses:
+
+```php
+'exclude_response_keys' => [
+    'data.password',
+    'data.token',
+    'data.secret',
+    'user.card_number',  // Nested keys supported
+],
+```
+
+Use wildcard patterns for arrays:
+
+```php
+'exclude_response_patterns' => [
+    'data.users[*].password',  // Removes password from all users
+    'data.items[*].secret',
+],
+```
+
+### Excluding Routes
+
+Skip logging for health checks or status endpoints:
+
+```php
+'exclude_routes' => [
+    'health',
+    'api/status',
+    'webhook/test',  // Exact match or regex
+],
+```
+
+Only log specific routes:
+
+```php
+'include_routes' => [
+    'api/',
+    'admin/',
+],
+```
+
+### Masking Nested Payload Fields
+
+Mask sensitive data in nested request payloads:
+
+```php
+'hidden_fields' => [
+    'password',
+    'token',
+],
+
+'exclude_payload_keys' => [
+    'user.password',
+    'card.cvv',
+],
+```
+
+---
+
+## Database Driver Optimization
+
+The database driver uses a two-table schema for better performance:
+
+- **`api_loggers`** - Indexable fields (method, URL, status_code, user_id, logged_at)
+- **`api_logger_responses`** - Large data (response, payload, headers)
+
+This separation allows:
+- Faster queries on the main table
+- Lazy loading of response data only when needed
+- Efficient indexing on frequently filtered fields
 
 ---
 
@@ -173,7 +333,7 @@ class RedisLogger extends AbstractLogger
 
 Your class:
 - **Must** implement `GDI\ApiLogger\Contracts\ApiLoggerInterface`
-- **May** extend `GDI\ApiLogger\Drivers\AbstractLogger` to inherit `buildLogData()` and `filterHidden()` helpers
+- **May** extend `GDI\ApiLogger\Drivers\AbstractLogger` to inherit `buildLogData()` and filtering helpers
 
 ### Step 2 — Register your driver
 
@@ -194,7 +354,8 @@ packages/apilogger/
 │   └── apilogger.php
 ├── database/
 │   └── migrations/
-│       └── 2024_01_01_000000_create_api_logs_table.php
+│       ├── 2026_01_01_000000_create_api_loggers_table.php
+│       └── 2026_01_02_000000_create_api_logger_responses_table.php
 ├── resources/
 │   └── views/
 │       ├── layouts/
@@ -212,13 +373,18 @@ packages/apilogger/
     │   ├── AbstractLogger.php
     │   ├── DatabaseLogger.php
     │   └── FileLogger.php
+    ├── Exceptions/
+    │   └── InvalidApiLogDriverException.php
     ├── Http/
     │   ├── Controllers/
     │   │   └── ApiLoggerController.php
     │   └── Middleware/
-    │       └── ApiLoggersMiddleware.php
+    │       └── ApiLoggerMiddleware.php
+    ├── Jobs/
+    │   └── WriteApiLog.php
     ├── Models/
-    │   └── ApiLogger.php
+    │   ├── ApiLogger.php
+    │   └── ApiLoggerResponse.php
     └── Providers/
         └── ApiLoggerServiceProvider.php
 ```

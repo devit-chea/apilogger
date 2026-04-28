@@ -16,11 +16,6 @@ return new class extends Migration
             $table->string('ip', 45)->nullable();
             $table->unsignedSmallInteger('status_code')->nullable()->index();
             $table->float('duration')->nullable()->comment('milliseconds');
-            $table->longText('payload')->nullable();
-            $table->longText('payload_raw')->nullable()->after('payload');
-            $table->longText('response')->nullable();
-            $table->longText('response_headers')->nullable()->after('response');
-            $table->text('headers')->nullable()->after('response');
             $table->string('controller')->nullable();
             $table->string('action')->nullable();
             $table->string('models')->nullable();

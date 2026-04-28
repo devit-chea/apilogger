@@ -3,6 +3,7 @@
 namespace GDI\ApiLogger\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ApiLogger extends Model
 {
@@ -17,8 +18,6 @@ class ApiLogger extends Model
         'ip',
         'status_code',
         'duration',
-        'payload',
-        'response',
         'controller',
         'action',
         'models',
@@ -29,6 +28,11 @@ class ApiLogger extends Model
     protected $casts = [
         'logged_at' => 'datetime',
     ];
+
+    public function response(): HasOne
+    {
+        return $this->hasOne(ApiLoggerResponse::class);
+    }
 
     public function scopeMethod($query, string $method)
     {

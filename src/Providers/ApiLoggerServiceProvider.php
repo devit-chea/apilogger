@@ -8,7 +8,7 @@ use GDI\ApiLogger\Contracts\ApiLoggerInterface;
 use GDI\ApiLogger\Drivers\DatabaseLogger;
 use GDI\ApiLogger\Drivers\FileLogger;
 use GDI\ApiLogger\Exceptions\InvalidApiLogDriverException;
-use GDI\ApiLogger\Http\Middleware\ApiLoggersMiddleware;
+use GDI\ApiLogger\Http\Middleware\ApiLoggerMiddleware;
 
 class ApiLoggerServiceProvider extends ServiceProvider
 {
@@ -30,7 +30,7 @@ class ApiLoggerServiceProvider extends ServiceProvider
         });
 
         // Register middleware alias
-        $this->app['router']->aliasMiddleware('apiloggers', ApiLoggersMiddleware::class);
+        $this->app['router']->aliasMiddleware('apilogger', ApiLoggerMiddleware::class);
     }
 
     public function boot(): void
