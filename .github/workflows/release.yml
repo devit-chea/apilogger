@@ -1,0 +1,75 @@
+# Runs when a version tag is pushed (normally by .claude/skills/release/scripts/release.sh).
+# Validates the package, creates the GitHub Release, and tells Packagist to update.
+#
+# Packagist update needs two repository secrets (Settings > Secrets and variables > Actions):
+#   PACKAGIST_USERNAME   your packagist.org username
+#   PACKAGIST_API_TOKEN  "Safe" API token from https://packagist.org/profile/
+# Without them the step is skipped (Packagist still updates if its GitHub hook is installed).
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1' # lowest version composer.json allows: catches newer-only syntax
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --no-check-all --no-check-lock --no-check-publish
+
+      - name: Tag matches composer.json version
+        run: |
+          version=$(php -r '$j = json_decode(file_get_contents("composer.json"), true); echo $j["version"] ?? "";')
+          if [ -n "$version" ] && [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::composer.json version is $version but the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+      - name: PHP syntax (PHP 8.1)
+        run: find src config database routes -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # checkout can leave a lightweight copy of the tag; fetch the annotated one to read its message
+          git fetch --force --quiet origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          : > notes.md
+          # Only an annotated tag has its own message (for a lightweight tag, contents:body is the commit's body)
+          if [ "$(git cat-file -t "refs/tags/$GITHUB_REF_NAME")" = tag ]; then
+            git for-each-ref --format='%(contents:body)' "refs/tags/$GITHUB_REF_NAME" > notes.md
+          fi
+          if ! grep -q '[^[:space:]]' notes.md; then # no message: list the commits since the previous tag
+            previous=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | grep -vx "$GITHUB_REF_NAME" | head -1)
+            git log --no-merges --pretty='- %s' "${previous:+refs/tags/$previous..}refs/tags/$GITHUB_REF_NAME" > notes.md
+          fi
+          grep -q '[^[:space:]]' notes.md || echo "No changes listed." > notes.md
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+
+      - name: Update Packagist
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
+        run: |
+          if [ -z "$PACKAGIST_USERNAME" ] || [ -z "$PACKAGIST_API_TOKEN" ]; then
+            echo "::notice::Packagist secrets not set: skipped. Packagist updates on its own only if its GitHub hook is installed."
+            exit 0
+          fi
+          curl --fail-with-body -sS -X POST \
+            -H 'Content-Type: application/json' \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_API_TOKEN}" \
+            -d "{\"repository\":{\"url\":\"https://github.com/${GITHUB_REPOSITORY}\"}}"

@@ -13,6 +13,8 @@ There is no PHPUnit suite, linter, or build step, and this repo's `vendor/` does
 .claude/skills/test/scripts/run.sh rules    # check files whose name contains "rules"
 ```
 
+Releases: `.claude/skills/release/scripts/release.sh <patch|minor|major|X.Y.Z>` does a dry run (checks, tests, plan). Add `--push` to bump `composer.json` `"version"`, commit, tag and push. `.github/workflows/release.yml` then creates the GitHub Release and updates Packagist. Host apps install the package from Packagist. Branch names match tag names (`v2.0.0` is both), so always use full refs (`refs/heads/…`, `refs/tags/…`). See `.claude/skills/release/SKILL.md`.
+
 See `.claude/skills/test/SKILL.md` for how it works and how to add a check under `.claude/skills/test/scripts/checks/`. The dashboard lives at `/apilogger`.
 
 ## Architecture
