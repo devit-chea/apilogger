@@ -4,6 +4,8 @@ namespace GDI\ApiLogger\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use GDI\ApiLogger\Console\ClearLogsCommand;
+use GDI\ApiLogger\Console\ImportRulesCommand;
+use GDI\ApiLogger\Rules\RuleRepository;
 use GDI\ApiLogger\Contracts\ApiLoggerInterface;
 use GDI\ApiLogger\Drivers\DatabaseLogger;
 use GDI\ApiLogger\Drivers\FileLogger;
@@ -28,6 +30,9 @@ class ApiLoggerServiceProvider extends ServiceProvider
                 default                => throw new InvalidApiLogDriverException("ApiLogger: unsupported driver [{$driver}]")
             };
         });
+
+        // Payload/response storage rules (config + optional database table)
+        $this->app->singleton(RuleRepository::class);
 
         // Register middleware alias
         $this->app['router']->aliasMiddleware('apilogger', ApiLoggerMiddleware::class);
@@ -62,7 +67,7 @@ class ApiLoggerServiceProvider extends ServiceProvider
             ], 'apilogger-migrations');
 
             // Register artisan command
-            $this->commands([ClearLogsCommand::class]);
+            $this->commands([ClearLogsCommand::class, ImportRulesCommand::class]);
         }
     }
 }

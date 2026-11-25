@@ -266,6 +266,8 @@
         </svg>
         API Logger
     </a>
+    <a class="btn btn-ghost btn-sm" href="{{ route('apilogger.index') }}">Logs</a>
+    <a class="btn btn-ghost btn-sm" href="{{ route('apilogger.rules.index') }}">Rules</a>
     <span class="spacer"></span>
     <span class="badge">{{ config('apilogger.driver', 'file') }} driver</span>
 </nav>

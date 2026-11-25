@@ -206,6 +206,65 @@ php artisan queue:work --queue=logs
 
 ## Advanced Configuration
 
+### Storing Only the Important Response Data
+
+To save database space, keep only the keys you need from a JSON response. Dot notation is supported, and `*` matches every key at one level (`data.*.id` keeps the `id` of every item):
+
+```php
+// Applies to every logged route. Empty array = store the whole body.
+'response_keys' => [
+    'response',
+    'uuid',
+    'message',
+    'code',
+],
+```
+
+Override it per route. The key is a route name or a path pattern (`*` wildcard), and the first match wins:
+
+```php
+'response_rules' => [
+    'endpoint.getDataByCode' => ['response', 'uuid', 'message', 'code', 'data.status'],
+    'api/v3/user*'           => false,   // store no response body
+    'api/v3/debug/*'         => ['*'],   // store the whole body
+],
+```
+
+Order of processing: keep `response_keys` / rule keys → remove `exclude_response_keys` and `exclude_response_patterns` → cut to `max_response_length`. Non-JSON bodies (e.g. HTML error pages) are stored unchanged, then cut. Bodies are stored with unescaped Unicode, so Khmer text takes about half the space of `\uXXXX` escapes.
+
+### Storing Only the Important Payload Data
+
+The request payload has the same options, `payload_keys` and `payload_rules`, with the same format:
+
+```php
+'payload_keys' => [],   // empty = store the whole payload
+
+'payload_rules' => [
+    'endpoint.getDataByCode' => ['site_id', 'id_number'],
+    'api/v3/password'        => false,   // store no payload
+],
+```
+
+Order of processing: keep `payload_keys` / rule keys → mask `hidden_fields` and `exclude_payload_keys` with `***` → cut to `max_payload_length`.
+
+### Managing Rules in the Dashboard
+
+Payload and response rules can also be stored in the database and managed at `/apilogger/rules` (protected by the dashboard's `route.middleware`).
+
+```env
+APILOGGER_DB_RULES=true
+APILOGGER_RULES_CACHE_TTL=300   # seconds, 0 = no cache
+```
+
+```bash
+php artisan migrate                    # creates api_logger_rules
+php artisan apilogger:import-rules     # optional: copy the config rules into the table
+```
+
+The **Import from config** button on the Rules page does the same as the command. Rules with the same type and pattern are skipped, so it is safe to run twice. Global `*_keys` lists are imported as a `*` rule with priority 1000.
+
+Each rule has a type (payload or response), a route name or path pattern, an action (keep these keys / store everything / store nothing), a priority (lower runs first) and an enabled switch. Matching order: enabled database rules by priority → `*_rules` from config → `*_keys` from config. Rules are cached; saving or deleting a rule clears the cache, and each process re-reads it within 10 seconds.
+
 ### Filtering Response Data
 
 Remove sensitive keys from logged responses:

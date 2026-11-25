@@ -154,6 +154,82 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Response Keys to Keep (allowlist)
+    |--------------------------------------------------------------------------
+    | Store only these keys of a JSON response body, to save database space.
+    | Dot notation, with "*" for every key at one level: 'data.*.id'.
+    | Empty array = store the whole body. Applied before exclude_response_keys
+    | and before max_response_length. Non-JSON bodies are stored unchanged.
+    |
+    */
+    'response_keys' => [
+        // 'response',
+        // 'uuid',
+        // 'message',
+        // 'code',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Per-Route Response Rules
+    |--------------------------------------------------------------------------
+    | Override response_keys for specific routes. The key is a route name or a
+    | path pattern ("*" wildcard); the first match wins. The value is:
+    |   - an array of keys to keep
+    |   - ['*'] or [] to store the whole body
+    |   - false to store no body at all
+    |
+    */
+    'response_rules' => [
+        // 'endpoint.getDataByCode' => ['response', 'uuid', 'message', 'code', 'data.status'],
+        // 'api/v3/user*'           => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payload Keys to Keep (allowlist)
+    |--------------------------------------------------------------------------
+    | Same as response_keys, for the request payload. Empty array = store the
+    | whole payload. Applied before hidden_fields masking and before
+    | max_payload_length.
+    |
+    */
+    'payload_keys' => [
+        // 'site_id',
+        // 'filter.*.name',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Per-Route Payload Rules
+    |--------------------------------------------------------------------------
+    | Same format as response_rules: route name or path pattern => array of
+    | keys, ['*'] / [] for the whole payload, or false for no payload.
+    |
+    */
+    'payload_rules' => [
+        // 'endpoint.getDataByCode' => ['site_id', 'id_number'],
+        // 'api/v3/password'        => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rules Managed in the Dashboard
+    |--------------------------------------------------------------------------
+    | When enabled, payload/response rules can be managed at /{prefix}/rules and
+    | are stored in the api_logger_rules table (run the migrations first).
+    | Database rules are matched before the *_rules above; *_keys remain the
+    | fallback. Rules are cached for cache_ttl seconds (0 = no cache) and the
+    | cache is cleared whenever a rule is saved or deleted.
+    |
+    */
+    'rules' => [
+        'database'  => env('APILOGGER_DB_RULES', false),
+        'cache_ttl' => (int) env('APILOGGER_RULES_CACHE_TTL', 300),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Response Key Paths to Exclude (JSON Path)
     |--------------------------------------------------------------------------
     | More powerful exclusion using JSON path patterns.
