@@ -10,7 +10,8 @@ Route::prefix($prefix)
     ->middleware($middleware)
     ->name('apilogger.')
     ->group(function () {
-        Route::get('/',         [ApiLoggerController::class, 'index'])->name('index');
-        Route::get('/{id}',     [ApiLoggerController::class, 'show'])->name('show');
-        Route::post('/clear',   [ApiLoggerController::class, 'clear'])->name('clear');
+        Route::get('/',             [ApiLoggerController::class, 'index'])->name('index');
+        Route::get('/{id}',         [ApiLoggerController::class, 'show'])->name('show');
+        Route::get('/{id}/response', [ApiLoggerController::class, 'response'])->name('response');
+        Route::post('/clear',       [ApiLoggerController::class, 'clear'])->name('clear');
     });

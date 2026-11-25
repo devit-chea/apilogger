@@ -1,4 +1,4 @@
-# GDI API Logger
+# API Logger
 
 A self-maintained Laravel package for logging, inspecting, and debugging API requests.
 Supports both **file** and **database** drivers, a built-in dashboard, and is fully extensible with custom drivers.

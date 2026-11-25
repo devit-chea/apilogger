@@ -2,12 +2,15 @@
 
 @section('content')
 
-<a href="{{ route('apilogger.index') }}" class="back-link">
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-    </svg>
-    Back to Logs
-</a>
+<div class="flex items-center gap-3" style="justify-content:space-between;flex-wrap:wrap;">
+    <a href="{{ route('apilogger.index') }}" class="back-link">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Back to Logs
+    </a>
+    <a href="{{ route('apilogger.response', $log['log_id'] ?? $log['id'] ?? $log['id'] ?? '') }}" class="btn btn-primary btn-sm">Response Only</a>
+</div>
 
 @php
     $method = strtoupper($log['method'] ?? 'GET');

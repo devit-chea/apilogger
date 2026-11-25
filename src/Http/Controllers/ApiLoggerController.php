@@ -39,6 +39,20 @@ class ApiLoggerController extends Controller
     }
 
     /**
+     * Show only the response body for a log entry.
+     */
+    public function response(string $id)
+    {
+        $log = $this->logger->find($id);
+
+        if (!$log) {
+            abort(404, 'Log entry not found.');
+        }
+
+        return view('apilogger::response', compact('log'));
+    }
+
+    /**
      * Clear all logs (POST for CSRF safety).
      */
     public function clear(Request $request)

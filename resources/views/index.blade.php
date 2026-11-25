@@ -122,6 +122,7 @@
                         <td>
                             @if($id)
                                 <a href="{{ route('apilogger.show', $id) }}" class="btn btn-ghost btn-sm">View</a>
+                                <a href="{{ route('apilogger.response', $id) }}" class="btn btn-ghost btn-sm">Response</a>
                             @endif
                         </td>
                     </tr>
