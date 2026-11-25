@@ -33,6 +33,6 @@ Host apps (core-api-v3) install the package from Packagist, which reads version 
 
 ## Gotchas
 
-- Branches are per major version (`v1.0.0`, `v2.0.0`) and share names with tags. Plain `git push origin v2.0.0` is ambiguous, so the script always uses `refs/heads/...` and `refs/tags/...`. Do the same if you push by hand.
+- Branches are per major version: `2.x` for 2.y.z releases (Packagist shows it as `2.x-dev`); `main` is the GitHub default. The old `v1.0.0` branch has the same name as a tag, so plain `git push origin v1.0.0` is ambiguous. The script always uses `refs/heads/...` and `refs/tags/...`; do the same if you push by hand. Name new major branches `3.x`, not `v3.0.0`.
 - `composer.json` has a fixed `"version"` field. It must match the tag, or Packagist reports a mismatch. The script bumps it.
 - If a push fails half way, the script prints the exact commands to retry or undo. Never delete or move a tag that is already on GitHub without the user asking.

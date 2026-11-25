@@ -6,7 +6,7 @@
 #   options: --skip-tests   (only when the core_api container can't be started; say so in the release)
 #
 # Pushing the tag starts .github/workflows/release.yml (validate, GitHub Release, Packagist update).
-# Full ref names are used everywhere: this repo has branches named like tags (branch v2.0.0 + tag v2.0.0).
+# Full ref names are used everywhere, in case a branch is named like a tag (v1.0.0 is both).
 set -euo pipefail
 
 die()  { echo "ERROR: $*" >&2; exit 1; }
@@ -60,8 +60,8 @@ git rev-parse --quiet --verify "refs/tags/$TAG" >/dev/null && die "tag $TAG alre
 [[ "$(printf '%s\n%s\n' "$LATEST" "$VERSION" | sort -V | tail -1)" == "$VERSION" && "$LATEST" != "$VERSION" ]] \
     || die "$VERSION is not newer than the latest tag ${LATEST_TAG:-none}"
 
-# Branches here are per major version (v1.0.0, v2.0.0); warn when releasing another major from one.
-if [[ "$BRANCH" =~ ^v([0-9]+)\. && "${BASH_REMATCH[1]}" != "${VERSION%%.*}" ]]; then
+# Branches are per major version (2.x; older: v1.0.0); warn when releasing another major from one.
+if [[ "$BRANCH" =~ ^v?([0-9]+)\. && "${BASH_REMATCH[1]}" != "${VERSION%%.*}" ]]; then
     echo "WARNING: releasing $TAG from branch $BRANCH (major ${BASH_REMATCH[1]})." >&2
 fi
 
